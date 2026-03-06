@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const eventController = require("../controllers/eventController");
+const newsController = require("../controllers/newsController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const adminMiddleware = require("../middlewares/adminMiddleware");
 
@@ -9,38 +9,37 @@ const adminMiddleware = require("../middlewares/adminMiddleware");
  * @swagger
  * components:
  *   schemas:
- *     Event:
+ *     News:
  *       type: object
  *       properties:
  *         id:
  *           type: integer
  *         titulo:
  *           type: string
- *         descricao:
+ *         conteudo:
  *           type: string
  *         data:
  *           type: string
  *       example:
- *         titulo: Feira de Ciências
- *         descricao: Evento anual de apresentação de projetos científicos.
- *         data: 2026-04-20
+ *         titulo: Nova feira de tecnologia no colégio
+ *         conteudo: O colégio realizará uma feira tecnológica no próximo mês.
  */
 
 /**
  * @swagger
- * /api/events:
+ * /api/news:
  *   get:
- *     summary: Lista todos os eventos
- *     tags: [Events]
+ *     summary: Lista todas as notícias
+ *     tags: [News]
  */
-router.get("/", eventController.getEvents);
+router.get("/", newsController.getNews);
 
 /**
  * @swagger
- * /api/events:
+ * /api/news:
  *   post:
- *     summary: Criar evento (APENAS ADMIN)
- *     tags: [Events]
+ *     summary: Criar nova notícia (APENAS ADMIN)
+ *     tags: [News]
  *     security:
  *       - bearerAuth: []
  */
@@ -48,15 +47,15 @@ router.post(
   "/",
   authMiddleware,
   adminMiddleware,
-  eventController.createEvent
+  newsController.createNews
 );
 
 /**
  * @swagger
- * /api/events/{id}:
+ * /api/news/{id}:
  *   delete:
- *     summary: Deletar evento (APENAS ADMIN)
- *     tags: [Events]
+ *     summary: Deletar notícia (APENAS ADMIN)
+ *     tags: [News]
  *     security:
  *       - bearerAuth: []
  */
@@ -64,7 +63,7 @@ router.delete(
   "/:id",
   authMiddleware,
   adminMiddleware,
-  eventController.deleteEvent
+  newsController.deleteNews
 );
 
 module.exports = router;

@@ -8,10 +8,13 @@ const userRoutes = require("./routes/useRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const postRoutes = require("./routes/postRoutes");
 const eventRoutes = require("./routes/eventRoutes");
+const newsRoutes = require("./routes/newsRoutes");
 
 const app = express();
 const PORT = 3000;
+const cors = require("cors");
 
+app.use(cors());
 app.use(express.json());
 
 // Swagger
@@ -27,6 +30,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/news", newsRoutes);
 
 // teste banco
 app.get("/teste-banco", (req, res) => {

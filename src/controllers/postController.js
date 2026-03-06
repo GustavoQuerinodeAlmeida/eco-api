@@ -1,56 +1,39 @@
 const db = require("../config/db");
 
-// LISTAR EVENTOS
-exports.getEvents = (req, res) => {
-  const sql = "SELECT * FROM events ORDER BY data_criacao DESC";
-
-  db.query(sql, (err, results) => {
-    if (err) {
-      return res.status(500).json({ erro: err });
-    }
-
-    res.json(results);
-  });
+exports.getPosts = async (req, res) => {
+  try {
+    const [posts] = await db.query("SELECT * FROM posts");
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
-// CRIAR EVENTO
-exports.createEvent = (req, res) => {
-  const { titulo, descricao, data_evento, imagem, criado_por } = req.body;
+exports.createPost = async (req, res) => {
+  try {
+    const { conteudo } = req.body;
+    const imagem = req.file ? req.file.filename : null;
+    const user_id = req.user.id;
 
-  const sql = `
-    INSERT INTO events (titulo, descricao, data_evento, imagem, criado_por)
-    VALUES (?, ?, ?, ?, ?)
-  `;
+    await db.query(
+      "INSERT INTO posts (conteudo, imagem, user_id) VALUES (?, ?, ?)",
+      [conteudo, imagem, user_id]
+    );
 
-  db.query(
-    sql,
-    [titulo, descricao, data_evento, imagem, criado_por],
-    (err, result) => {
-      if (err) {
-        return res.status(500).json({ erro: err });
-      }
-
-      res.status(201).json({
-        mensagem: "Evento criado com sucesso",
-        id: result.insertId
-      });
-    }
-  );
+    res.json({ message: "Post criado com sucesso" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
-// DELETAR EVENTO
-exports.deleteEvent = (req, res) => {
-  const { id } = req.params;
+exports.deletePost = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-  const sql = "DELETE FROM events WHERE id = ?";
+    await db.query("DELETE FROM posts WHERE id = ?", [id]);
 
-  db.query(sql, [id], (err) => {
-    if (err) {
-      return res.status(500).json({ erro: err });
-    }
-
-    res.json({
-      mensagem: "Evento deletado"
-    });
-  });
+    res.json({ message: "Post deletado" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
