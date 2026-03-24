@@ -30,12 +30,19 @@ exports.createUser = async (req, res) => {
 
     const senhaHash = await bcrypt.hash(senha, 10);
 
-    const sql =
-      "INSERT INTO users (nome, email, senha_hash) VALUES (?, ?, ?)";
+    const sql = "INSERT INTO users (nome, email, senha) VALUES (?, ?, ?)";
 
     db.query(sql, [nome, email, senhaHash], (err, result) => {
       if (err) {
-        return res.status(500).json({ erro: err });
+        // ESSAS DUAS LINHAS SÃO A CHAVE:
+        console.error("❌ ERRO NO BANCO DE DADOS:", err.message);
+        console.error("Código do erro:", err.code);
+        
+        return res.status(500).json({ 
+          erro: "Erro no banco de dados", 
+          detalhes: err.message,
+          codigo: err.code 
+        });
       }
 
       res.status(201).json({
@@ -44,7 +51,8 @@ exports.createUser = async (req, res) => {
       });
     });
   } catch (error) {
-    res.status(500).json({ erro: error });
+    console.error("❌ ERRO NO CATCH:", error);
+    res.status(500).json({ erro: error.message });
   }
 };
 
@@ -67,7 +75,7 @@ exports.login = (req, res) => {
 
     const user = results[0];
 
-    const senhaValida = await bcrypt.compare(senha, user.senha_hash);
+    const senhaValida = await bcrypt.compare(senha, user.senha);
 
     if (!senhaValida) {
       return res.status(401).json({
