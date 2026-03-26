@@ -1,39 +1,42 @@
 const db = require("../config/db");
 
-exports.getPosts = async (req, res) => {
-  try {
-    const [posts] = await db.query("SELECT * FROM posts");
-    res.json(posts);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+exports.getPosts = (req, res) => {
+  const sql = "SELECT * FROM posts ORDER BY id DESC";
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      return res.status(500).json({ erro: err.message });
+    }
+    res.json(results);
+  });
 };
 
-exports.createPost = async (req, res) => {
-  try {
-    const { conteudo } = req.body;
-    const imagem = req.file ? req.file.filename : null;
-    const user_id = req.user.id;
+exports.createPost = (req, res) => {
+  const { conteudo } = req.body;
+  const imagem = req.file ? req.file.filename : null;
+  const user_id = req.user.id; // Pega o ID com segurança do token
 
-    await db.query(
-      "INSERT INTO posts (conteudo, imagem, user_id) VALUES (?, ?, ?)",
-      [conteudo, imagem, user_id]
-    );
+  const sql = "INSERT INTO posts (conteudo, imagem, user_id) VALUES (?, ?, ?)";
 
-    res.json({ message: "Post criado com sucesso" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  db.query(sql, [conteudo, imagem, user_id], (err, result) => {
+    if (err) {
+      return res.status(500).json({ erro: err.message });
+    }
+    res.status(201).json({ 
+      mensagem: "Post criado com sucesso",
+      id: result.insertId 
+    });
+  });
 };
 
-exports.deletePost = async (req, res) => {
-  try {
-    const { id } = req.params;
+exports.deletePost = (req, res) => {
+  const { id } = req.params;
+  const sql = "DELETE FROM posts WHERE id = ?";
 
-    await db.query("DELETE FROM posts WHERE id = ?", [id]);
-
-    res.json({ message: "Post deletado" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  db.query(sql, [id], (err) => {
+    if (err) {
+      return res.status(500).json({ erro: err.message });
+    }
+    res.json({ mensagem: "Post deletado com sucesso" });
+  });
 };

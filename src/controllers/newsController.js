@@ -1,36 +1,40 @@
 const db = require("../config/db");
 
-exports.getNews = async (req, res) => {
-  try {
-    const [news] = await db.query("SELECT * FROM news ORDER BY id DESC");
-    res.json(news);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+exports.getNews = (req, res) => {
+  const sql = "SELECT * FROM news ORDER BY id DESC";
+  
+  db.query(sql, (err, results) => {
+    if (err) {
+      return res.status(500).json({ erro: err.message });
+    }
+    res.json(results);
+  });
 };
 
-exports.createNews = async (req, res) => {
+exports.createNews = (req, res) => {
   const { titulo, conteudo } = req.body;
 
-  try {
-    await db.query(
-      "INSERT INTO news (titulo, conteudo) VALUES (?, ?)",
-      [titulo, conteudo]
-    );
+  const sql = "INSERT INTO news (titulo, conteudo) VALUES (?, ?)";
 
-    res.json({ message: "Notícia criada com sucesso" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  db.query(sql, [titulo, conteudo], (err, result) => {
+    if (err) {
+      return res.status(500).json({ erro: err.message });
+    }
+    res.status(201).json({ 
+      mensagem: "Notícia criada com sucesso",
+      id: result.insertId 
+    });
+  });
 };
 
-exports.deleteNews = async (req, res) => {
+exports.deleteNews = (req, res) => {
   const { id } = req.params;
+  const sql = "DELETE FROM news WHERE id = ?";
 
-  try {
-    await db.query("DELETE FROM news WHERE id = ?", [id]);
-    res.json({ message: "Notícia deletada com sucesso" });
-  } catch (error) {
-    res.status(500).json({ error: "Erro ao deletar notícia" });
-  }
+  db.query(sql, [id], (err) => {
+    if (err) {
+      return res.status(500).json({ erro: "Erro ao deletar notícia" });
+    }
+    res.json({ mensagem: "Notícia deletada com sucesso" });
+  });
 };
