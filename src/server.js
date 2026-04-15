@@ -25,13 +25,17 @@ const UsuarioSchema = new mongoose.Schema({
   email: String,
   senha: String,
   curso: String,
-  semestre: String
+  semestre: String,
+  foto: {
+    type: String,
+    default: ''
+  }
 })
 
 const Usuario = mongoose.model('Usuario', UsuarioSchema)
 
 /* =========================================
-   MODEL POST (🔥 ATUALIZADO)
+   MODEL POST
 ========================================= */
 const PostSchema = new mongoose.Schema({
   autor: String,
@@ -39,14 +43,23 @@ const PostSchema = new mongoose.Schema({
   conteudo: String,
   imagem: String,
 
-  userId: String, // 🔥 dono do post
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario',
+    required: true
+  },
+
+  foto: String, // 🔥 foto do usuário no post
 
   likes: {
     type: Number,
     default: 0
   },
 
-  curtidas: [String], // 🔥 controla quem curtiu
+  curtidas: {
+    type: [String],
+    default: []
+  },
 
   criadoEm: {
     type: Date,
@@ -96,11 +109,44 @@ app.post('/login', async (req, res) => {
 })
 
 /* =========================================
+   ATUALIZAR FOTO
+========================================= */
+app.put('/usuarios/:id/foto', async (req, res) => {
+  try {
+    const { foto } = req.body
+
+    const usuario = await Usuario.findByIdAndUpdate(
+      req.params.id,
+      { foto },
+      { new: true }
+    )
+
+    res.json(usuario)
+
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao salvar foto' })
+  }
+})
+
+/* =========================================
    CRIAR POST
 ========================================= */
 app.post('/posts', async (req, res) => {
   try {
-    const post = await Post.create(req.body)
+    const { userId } = req.body
+
+    if (!userId) {
+      return res.status(400).json({ erro: 'userId obrigatório' })
+    }
+
+    const usuario = await Usuario.findById(userId)
+
+    const post = await Post.create({
+      ...req.body,
+      userId,
+      foto: usuario?.foto || ''
+    })
+
     res.status(201).json(post)
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao criar post' })
@@ -119,12 +165,17 @@ app.get('/posts', async (req, res) => {
   }
 })
 
+
 /* =========================================
-   ❤️ CURTIR (1 POR USUÁRIO)
+   ❤️ CURTIR / DESCURTIR
 ========================================= */
 app.put('/posts/:id/like', async (req, res) => {
   try {
     const { userId } = req.body
+
+    if (!userId) {
+      return res.status(400).json({ erro: 'userId obrigatório' })
+    }
 
     const post = await Post.findById(req.params.id)
 
@@ -132,13 +183,15 @@ app.put('/posts/:id/like', async (req, res) => {
       return res.status(404).json({ erro: 'Post não encontrado' })
     }
 
-    // 🔥 BLOQUEIA CURTIDA DUPLA
-    if (post.curtidas.includes(userId)) {
-      return res.status(400).json({ erro: 'Você já curtiu' })
-    }
+    const jaCurtiu = post.curtidas.includes(userId)
 
-    post.likes += 1
-    post.curtidas.push(userId)
+    if (jaCurtiu) {
+      post.likes -= 1
+      post.curtidas = post.curtidas.filter(id => id !== userId)
+    } else {
+      post.likes += 1
+      post.curtidas.push(userId)
+    }
 
     await post.save()
 
@@ -150,24 +203,23 @@ app.put('/posts/:id/like', async (req, res) => {
 })
 
 /* =========================================
-   🗑️ DELETAR (SÓ DONO)
+   🗑️ DELETAR
 ========================================= */
-app.delete('/posts/:id', async (req, res) => {
+app.delete('/posts/:id/:userId', async (req, res) => {
   try {
-    const { userId } = req.body
+    const { id, userId } = req.params
 
-    const post = await Post.findById(req.params.id)
+    const post = await Post.findById(id)
 
     if (!post) {
       return res.status(404).json({ erro: 'Post não encontrado' })
     }
 
-    // 🔥 VERIFICA DONO
-    if (post.userId !== userId) {
+    if (post.userId.toString() !== userId) {
       return res.status(403).json({ erro: 'Sem permissão' })
     }
 
-    await Post.findByIdAndDelete(req.params.id)
+    await Post.findByIdAndDelete(id)
 
     res.json({ mensagem: 'Post deletado' })
 
