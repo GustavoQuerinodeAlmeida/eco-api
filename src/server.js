@@ -18,7 +18,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/ecohub')
   .catch(err => console.log('❌ Erro MongoDB:', err))
 
 /* =========================================
-   MODEL USUÁRIO
+   MODEL USUÁRIO (ATUALIZADO 🔥)
 ========================================= */
 const UsuarioSchema = new mongoose.Schema({
   nome: String,
@@ -29,6 +29,16 @@ const UsuarioSchema = new mongoose.Schema({
   foto: {
     type: String,
     default: ''
+  },
+
+  // 🔥 NOVO (seguir)
+  seguindo: {
+    type: [String],
+    default: []
+  },
+  seguidores: {
+    type: [String],
+    default: []
   }
 })
 
@@ -49,7 +59,7 @@ const PostSchema = new mongoose.Schema({
     required: true
   },
 
-  foto: String, // 🔥 foto do usuário no post
+  foto: String,
 
   likes: {
     type: Number,
@@ -105,6 +115,62 @@ app.post('/login', async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ erro: 'Erro no login' })
+  }
+})
+
+/* =========================================
+   🔍 BUSCAR USUÁRIOS (NOVO)
+========================================= */
+app.get('/usuarios', async (req, res) => {
+  try {
+    const { nome } = req.query
+
+    const usuarios = await Usuario.find({
+      nome: { $regex: nome || '', $options: 'i' }
+    }).select('-senha')
+
+    res.json(usuarios)
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar usuários' })
+  }
+})
+
+/* =========================================
+   👥 SEGUIR / DEIXAR DE SEGUIR (NOVO)
+========================================= */
+app.put('/usuarios/seguir/:id', async (req, res) => {
+  try {
+    const { userId } = req.body
+    const alvoId = req.params.id
+
+    if (userId === alvoId) {
+      return res.status(400).json({ erro: 'Não pode seguir você mesmo' })
+    }
+
+    const usuario = await Usuario.findById(userId)
+    const alvo = await Usuario.findById(alvoId)
+
+    if (!usuario || !alvo) {
+      return res.status(404).json({ erro: 'Usuário não encontrado' })
+    }
+
+    const jaSegue = usuario.seguindo.includes(alvoId)
+
+    if (jaSegue) {
+      usuario.seguindo = usuario.seguindo.filter(id => id !== alvoId)
+      alvo.seguidores = alvo.seguidores.filter(id => id !== userId)
+    } else {
+      usuario.seguindo.push(alvoId)
+      alvo.seguidores.push(userId)
+    }
+
+    await usuario.save()
+    await alvo.save()
+
+    res.json({ seguindo: usuario.seguindo })
+
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao seguir' })
   }
 })
 
@@ -165,7 +231,6 @@ app.get('/posts', async (req, res) => {
   }
 })
 
-
 /* =========================================
    ❤️ CURTIR / DESCURTIR
 ========================================= */
@@ -173,15 +238,7 @@ app.put('/posts/:id/like', async (req, res) => {
   try {
     const { userId } = req.body
 
-    if (!userId) {
-      return res.status(400).json({ erro: 'userId obrigatório' })
-    }
-
     const post = await Post.findById(req.params.id)
-
-    if (!post) {
-      return res.status(404).json({ erro: 'Post não encontrado' })
-    }
 
     const jaCurtiu = post.curtidas.includes(userId)
 
@@ -210,10 +267,6 @@ app.delete('/posts/:id/:userId', async (req, res) => {
     const { id, userId } = req.params
 
     const post = await Post.findById(id)
-
-    if (!post) {
-      return res.status(404).json({ erro: 'Post não encontrado' })
-    }
 
     if (post.userId.toString() !== userId) {
       return res.status(403).json({ erro: 'Sem permissão' })
