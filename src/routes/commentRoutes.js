@@ -1,9 +1,8 @@
-const express = require("express");
-const router = express.Router();
-const commentController = require("../controllers/commentController");
-const authMiddleware = require("../middlewares/authMiddleware");
+import express from 'express'
+import { listarComentariosPorPost } from '../controllers/commentController.js'
 
-router.post("/", authMiddleware, commentController.createComment);
-router.delete("/:id", authMiddleware, commentController.deleteComment);
+const router = express.Router()
 
-module.exports = router;
+router.get('/comments/:postId', listarComentariosPorPost)
+
+export default router

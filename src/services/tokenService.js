@@ -1,20 +1,20 @@
-const jwt = require('jsonwebtoken');
+import express from 'express'
+import cors from 'cors'
+import postRoutes from './routes/postRoutes.js'
+import commentRoutes from './routes/commentRoutes.js'
 
-const SECRET = "seu_segredo_super_secreto";
+const app = express()
 
-const generateToken = (user) => {
-    return jwt.sign(
-        { id: user.id, email: user.email },
-        SECRET,
-        { expiresIn: "1h" }
-    );
-};
+app.use(cors())
+app.use(express.json())
 
-const verifyToken = (token) => {
-    return jwt.verify(token, SECRET);
-};
+app.get('/', (req, res) => {
+  res.send('API MySQL funcionando 🚀')
+})
 
-module.exports = {
-    generateToken,
-    verifyToken
-};      
+app.use(postRoutes)
+app.use(commentRoutes)
+
+app.listen(3000, () => {
+  console.log('🚀 Servidor rodando em http://localhost:3000')
+})
