@@ -1,18 +1,10 @@
-const mysql = require("mysql2");
+import mysql from 'mysql2/promise'
 
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "ecohub"
-});
+const db = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'ecohub'
+})
 
-db.connect((err) => {
-  if (err) {
-    console.error("Erro ao conectar no banco:", err);
-    return;
-  }
-  console.log("Banco conectado 🚀");
-});
-
-module.exports = db;
+export default db
