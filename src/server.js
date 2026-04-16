@@ -18,7 +18,7 @@ mongoose.connect('mongodb://127.0.0.1:27017/ecohub')
   .catch(err => console.log('❌ Erro MongoDB:', err))
 
 /* =========================================
-   MODEL USUÁRIO (ATUALIZADO 🔥)
+   MODEL USUÁRIO
 ========================================= */
 const UsuarioSchema = new mongoose.Schema({
   nome: String,
@@ -30,8 +30,6 @@ const UsuarioSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-
-  // 🔥 NOVO (seguir)
   seguindo: {
     type: [String],
     default: []
@@ -119,7 +117,7 @@ app.post('/login', async (req, res) => {
 })
 
 /* =========================================
-   🔍 BUSCAR USUÁRIOS (NOVO)
+   BUSCAR USUÁRIOS
 ========================================= */
 app.get('/usuarios', async (req, res) => {
   try {
@@ -136,7 +134,24 @@ app.get('/usuarios', async (req, res) => {
 })
 
 /* =========================================
-   👥 SEGUIR / DEIXAR DE SEGUIR (NOVO)
+   BUSCAR USUÁRIO POR ID
+========================================= */
+app.get('/usuarios/:id', async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.params.id).select('-senha')
+
+    if (!usuario) {
+      return res.status(404).json({ erro: 'Usuário não encontrado' })
+    }
+
+    res.json(usuario)
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar usuário' })
+  }
+})
+
+/* =========================================
+   SEGUIR / DEIXAR DE SEGUIR
 ========================================= */
 app.put('/usuarios/seguir/:id', async (req, res) => {
   try {
@@ -188,7 +203,6 @@ app.put('/usuarios/:id/foto', async (req, res) => {
     )
 
     res.json(usuario)
-
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao salvar foto' })
   }
@@ -232,7 +246,33 @@ app.get('/posts', async (req, res) => {
 })
 
 /* =========================================
-   ❤️ CURTIR / DESCURTIR
+   EDITAR POST
+========================================= */
+app.put('/posts/:id', async (req, res) => {
+  try {
+    const { conteudo, userId } = req.body
+
+    const post = await Post.findById(req.params.id)
+
+    if (!post) {
+      return res.status(404).json({ erro: 'Post não encontrado' })
+    }
+
+    if (post.userId.toString() !== userId) {
+      return res.status(403).json({ erro: 'Sem permissão para editar este post' })
+    }
+
+    post.conteudo = conteudo
+    await post.save()
+
+    res.json(post)
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao editar post' })
+  }
+})
+
+/* =========================================
+   CURTIR / DESCURTIR
 ========================================= */
 app.put('/posts/:id/like', async (req, res) => {
   try {
@@ -260,7 +300,7 @@ app.put('/posts/:id/like', async (req, res) => {
 })
 
 /* =========================================
-   🗑️ DELETAR
+   DELETAR POST
 ========================================= */
 app.delete('/posts/:id/:userId', async (req, res) => {
   try {
